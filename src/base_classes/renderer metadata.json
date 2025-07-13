@@ -1,9 +1,0 @@
-{
-    "package type": "renderer",
-	"package name": "PACKAGE",
-	"author name": "AUTHOR",
-	"package description": "DESCRIPTION",
-	"package image path": "PATH",
-	"package path": "PATH",
-	"package class": "CLASS"
-}
