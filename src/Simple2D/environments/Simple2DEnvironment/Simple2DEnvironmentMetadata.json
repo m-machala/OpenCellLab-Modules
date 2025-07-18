@@ -1,9 +1,9 @@
 {
     "package type": "environment",
 	"package name": "Simple 2D Environment",
-	"author name": "AUTHOR",
+	"author name": "m_machala",
 	"package description": "Environment for facilitating interactions between cells in a 2D square grid.",
-	"package image path": "PATH",
+	"package image path": "Simple2DEnvironmentIcon.png",
 	"package path": "Simple2DEnvironment.py",
 	"package class": "Simple2DEnvironment",
 	"renderer class": "Simple2DRenderer"

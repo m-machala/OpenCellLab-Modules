@@ -3,15 +3,15 @@
 	"package name": "Virus",
 	"author name": "m_machala",
 	"package description": "This pack contains a cell which creates a growing pattern.",
-	"package image path": "PATH",
+	"package image path": "VirusIcon.png",
 	"package path": "Virus.py",
 	"environment class": "Simple2DEnvironment",
 	"cell types": [
 	{
 		"cell class": "Virus",
 		"cell name": "Virus",
-		"cell description": "DESCRIPTION",
-		"cell image path": "PATH"
+		"cell description": "Creates a growing pattern.",
+		"cell image path": "VirusIcon.png"
 	}
 	]
 }

@@ -3,7 +3,7 @@
 	"package name": "Genetic cell",
 	"author name": "m_machala",
 	"package description": "Cell making decisions based on its genome",
-	"package image path": "PATH",
+	"package image path": "GeneticCellIcon.png",
 	"package path": "GeneticCell.py",
 	"environment class": "Energy2DEnvironment",
 	"cell types": [
@@ -11,7 +11,7 @@
 		"cell class": "GeneticCell",
 		"cell name": "Genetic cell",
 		"cell description": "Cell making decisions based on its genome",
-		"cell image path": "PATH"
+		"cell image path": "GeneticCellIcon.png"
 	}
 	]
 }

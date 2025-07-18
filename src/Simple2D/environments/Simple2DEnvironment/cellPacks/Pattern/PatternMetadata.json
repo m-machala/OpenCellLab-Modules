@@ -3,15 +3,15 @@
 	"package name": "Pattern",
 	"author name": "m_machala",
 	"package description": "This pack contains a cell which produces a spiral pattern.",
-	"package image path": "PATH",
+	"package image path": "PatternIcon.png",
 	"package path": "Pattern.py",
 	"environment class": "Simple2DEnvironment",
 	"cell types": [
 	{
 		"cell class": "Pattern",
 		"cell name": "Pattern",
-		"cell description": "DESCRIPTION",
-		"cell image path": "PATH"
+		"cell description": "Creates a spiral pattern.",
+		"cell image path": "PatternIcon.png"
 	}
 	]
 }

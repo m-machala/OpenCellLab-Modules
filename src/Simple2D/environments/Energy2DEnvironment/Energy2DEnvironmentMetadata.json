@@ -1,9 +1,9 @@
 {
     "package type": "environment",
 	"package name": "Energy 2D Environment",
-	"author name": "AUTHOR",
+	"author name": "m_machala",
 	"package description": "Environment for facilitating interactions between cells in a 2D square grid with energy.",
-	"package image path": "PATH",
+	"package image path": "Energy2DEnvironmentIcon.png",
 	"package path": "Energy2DEnvironment.py",
 	"package class": "Energy2DEnvironment",
 	"renderer class": "Simple2DRenderer"

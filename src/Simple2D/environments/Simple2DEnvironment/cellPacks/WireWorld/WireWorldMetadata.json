@@ -3,7 +3,7 @@
 	"package name": "WireWorld",
 	"author name": "m_machala",
 	"package description": "Adaptation of the WireWorld cell automaton. Allows for the creation of circuits.",
-	"package image path": "PATH",
+	"package image path": "WireWorldIcon.png",
 	"package path": "WireWorld.py",
 	"environment class": "Simple2DEnvironment",
 	"cell types": [
@@ -11,21 +11,21 @@
 		"cell class": "Wire",
 		"cell name": "Wire",
 		"cell description": "Conductor for electrons.",
-		"cell image path": "PATH"
+		"cell image path": "WireIcon.png"
 	},
 
 	{
 		"cell class": "Head",
 		"cell name": "Electron head",
 		"cell description": "The leading part of an electron.",
-		"cell image path": "PATH"
+		"cell image path": "ElectronHeadIcon.png"
 	},
 
 	{
 		"cell class": "Tail",
 		"cell name": "Electron tail",
 		"cell description": "The end part of an electron.",
-		"cell image path": "PATH"
+		"cell image path": "ElectronTailIcon.png"
 	}
 	]
 }

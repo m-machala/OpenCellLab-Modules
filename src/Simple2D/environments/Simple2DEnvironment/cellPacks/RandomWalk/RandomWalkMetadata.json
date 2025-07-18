@@ -3,15 +3,15 @@
 	"package name": "RandomWalk",
 	"author name": "m_machala",
 	"package description": "This pack contains a cell which does a random walk.",
-	"package image path": "PATH",
+	"package image path": "RandomWalkIcon.png",
 	"package path": "RandomWalk.py",
 	"environment class": "Simple2DEnvironment",
 	"cell types": [
 	{
 		"cell class": "RandomWalk",
 		"cell name": "Random Walk",
-		"cell description": "DESCRIPTION",
-		"cell image path": "PATH"
+		"cell description": "Does a random walk.",
+		"cell image path": "RandomWalkIcon.png"
 	}
 	]
 }
