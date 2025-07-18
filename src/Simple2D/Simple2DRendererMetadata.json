@@ -1,7 +1,7 @@
 {
     "package type": "renderer",
 	"package name": "Simple 2D Renderer",
-	"author name": "AUTHOR",
+	"author name": "m_machala",
 	"package description": "Renderer which renders cells in a 2D square grid.",
 	"package image path": "Simple2DRendererIcon.png",
 	"package path": "Simple2DRenderer.py",
