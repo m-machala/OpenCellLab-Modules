@@ -1,0 +1,8 @@
+{
+    "package type": "renderer",
+	"package name": "Simple 3D Renderer",
+	"author name": "m_machala",
+	"package description": "Renderer which renders cells in a 3D cube grid.",
+	"package path": "Simple3DRenderer.py",
+	"package class": "Simple3DRenderer"
+}
