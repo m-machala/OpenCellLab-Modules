@@ -4,6 +4,7 @@ from ExportFunctions import ExportFunction, ControlElement
 
 from PIL import Image, ImageDraw
 import numpy as np
+import time
 
 halfCubeWidth = 0.5
 cubeVertices = np.array([[-halfCubeWidth, -halfCubeWidth, -halfCubeWidth],
@@ -26,8 +27,12 @@ class Simple3DRenderer(Renderer):
     def __init__(self, outputResolutionW, outputResolutionH):
         super().__init__(outputResolutionW, outputResolutionH)
 
-        self._cameraPosition = [0.0, 0.0, 0.0] # X, Y, Z
-        self._cameraRotationMatrix = np.identity(3)  # pitch, yaw, roll 
+        self._pressedKeys = set()
+        self._lastFrame = time.perf_counter()
+        self._currentFrame = self._lastFrame 
+
+        self._cameraPosition = np.array([0.0, 0.0, 0.0]) # X, Y, Z
+        self._cameraRotation = np.array([0.0, 0.0, 0.0]) # pitch, yaw, roll 
         self._cameraMovementSpeed = 0.25
         self._cameraRotationSpeed = 0.05
 
@@ -36,25 +41,19 @@ class Simple3DRenderer(Renderer):
 
         self._FOV = 90
 
-        self._exportFunctions = [ExportFunction(self._moveUp, "Move up", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._moveDown, "Move down", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._moveLeft, "Move left", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._moveRight, "Move right", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._moveForward, "Move forward", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._moveBack, "Move back", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._rotateUp, "Rotate up", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._rotateDown, "Rotate down", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._rotateLeft, "Rotate left", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._rotateRight, "Rotate right", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._rotateClockwise, "Rotate clockwise", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._rotateCounterclockwise, "Rotate counterclockwise", ControlElement.REPEATINGBUTTON, [10]),
-                                 ExportFunction(self._changeFOV, "FOV", ControlElement.SLIDER, [1, 1799, 900])]
+        self._exportFunctions = [ExportFunction(self._changeFOV, "FOV", ControlElement.SLIDER, [1, 1799, 900]),
+                                 ExportFunction(self._changeMovementSpeed, "Movement speed", ControlElement.SLIDER, [1, 1000, 100]),
+                                 ExportFunction(self._changeRotationSpeed, "Rotation speed", ControlElement.SLIDER, [1, 50, 5])]
 
         self._backgroundColor = (0, 0, 0)
 
     def render(self, cell3DList):
         outputBaseWidth = self.outputResolutionW
         outputBaseHeight = self.outputResolutionH
+
+        self._currentFrame = time.perf_counter()
+        self._processMovement()
+        self._lastFrame = self._currentFrame
 
         outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color = self._backgroundColor)
         outputImageDraw = ImageDraw.Draw(outputImage)
@@ -117,7 +116,9 @@ class Simple3DRenderer(Renderer):
                 y = vertex[1] + coordinates[1] - self._cameraPosition[1]
                 z = vertex[2] + coordinates[2] - self._cameraPosition[2]
 
-                transformationMatrix = self._cameraRotationMatrix
+                pitch, yaw, roll = self._cameraRotation
+
+                transformationMatrix = self._getRotationMatrix(pitch, yaw, roll)
                 vector = np.array([x, y, z])
                 transformed = vector @ transformationMatrix
                 x, y, z = np.asarray(transformed).flatten()
@@ -145,9 +146,14 @@ class Simple3DRenderer(Renderer):
     def convertFromImageCoordinates(self, xCoordinate, yCoordinate):
         pass
 
-    def _moveCamera(self, movementVector):
+    def _primaryDrag(self, originalData, newData):
+        rotationVector = [(newData[1] - originalData[1]) / self.outputResolutionH * 75, (originalData[0] - newData[0]) / self.outputResolutionW * 75, 0]
+        self._rotateCamera(rotationVector)
 
-        transformationMatrix = self._cameraRotationMatrix.T
+    def _moveCamera(self, movementVector):
+        pitch, yaw, roll = self._cameraRotation
+        rotationMatrix = self._getRotationMatrix(pitch, yaw, roll)
+        transformationMatrix = rotationMatrix.T
         vector = np.array(movementVector) * self._cameraMovementSpeed
         transformed = vector @ transformationMatrix
         x, y, z = np.asarray(transformed).flatten()
@@ -156,28 +162,31 @@ class Simple3DRenderer(Renderer):
         self._cameraPosition[1] += y
         self._cameraPosition[2] += z
 
-    def _moveUp(self):
-        self._moveCamera([0, -1, 0])
+    def _moveUp(self, multiplier = 1.0):
+        self._moveCamera(np.array([0, -1, 0]) * multiplier)
 
-    def _moveDown(self):
-        self._moveCamera([0, 1, 0])
+    def _moveDown(self, multiplier = 1.0):
+        self._moveCamera(np.array([0, 1, 0])* multiplier)
 
-    def _moveLeft(self):
-        self._moveCamera([-1, 0, 0])
+    def _moveLeft(self, multiplier = 1.0):
+        self._moveCamera(np.array([-1, 0, 0]) * multiplier)
 
-    def _moveRight(self):
-        self._moveCamera([1, 0, 0])
+    def _moveRight(self, multiplier = 1.0):
+        self._moveCamera(np.array([1, 0, 0])* multiplier)
 
-    def _moveBack(self):
-        self._moveCamera([0, 0, -1])
+    def _moveBack(self, multiplier = 1.0):
+        self._moveCamera(np.array([0, 0, -1]) * multiplier)
 
-    def _moveForward(self):
-        self._moveCamera([0, 0, 1])
-
+    def _moveForward(self, multiplier = 1.0):
+        self._moveCamera(np.array([0, 0, 1])* multiplier)
 
     def _rotateCamera(self, rotationVector):
-        pitch, yaw, roll = np.array(rotationVector) * self._cameraRotationSpeed
+        scaledVector = np.array(rotationVector) * self._cameraRotationSpeed
+        self._cameraRotation += scaledVector
 
+        self._cameraRotation[0] = np.clip(self._cameraRotation[0], -1.570796, 1.570796)
+
+    def _getRotationMatrix(self, pitch, yaw, roll):
         pitchMatrix = np.array([[1, 0, 0],
                                 [0, np.cos(pitch), -np.sin(pitch)],
                                 [0, np.sin(pitch), np.cos(pitch)]])
@@ -186,32 +195,48 @@ class Simple3DRenderer(Renderer):
                               [0, 1, 0],
                               [-np.sin(yaw), 0, np.cos(yaw)]])
 
-        rollMatrix = np.array([[np.cos(roll), -np.sin(roll), 0],
-                               [np.sin(roll),  np.cos(roll), 0],
-                               [0, 0, 1]])
-
-        deltaRotation = yawMatrix @ pitchMatrix @ rollMatrix
-
-        self._cameraRotationMatrix = self._cameraRotationMatrix @ deltaRotation
-
-
-    def _rotateLeft(self):
-        self._rotateCamera([0, -1, 0])
-
-    def _rotateRight(self):
-        self._rotateCamera([0, 1, 0])
-
-    def _rotateDown(self):
-        self._rotateCamera([-1, 0, 0])
-
-    def _rotateUp(self):
-        self._rotateCamera([1, 0, 0])
-
-    def _rotateCounterclockwise(self):
-        self._rotateCamera([0, 0, -1])
-
-    def _rotateClockwise(self):
-        self._rotateCamera([0, 0, 1])
+        #rollMatrix = np.array([[np.cos(roll), -np.sin(roll), 0],
+        #                       [np.sin(roll),  np.cos(roll), 0],
+        #                       [0, 0, 1]])
+        
+        return yawMatrix @ pitchMatrix #@ rollMatrix
 
     def _changeFOV(self, FOV):
         self._FOV = FOV / 10
+
+    def _changeMovementSpeed(self, speed):
+        self._cameraMovementSpeed = speed / 100
+
+    def _changeRotationSpeed(self, speed):
+        self._cameraRotationSpeed = speed / 100
+
+    def _keyPressed(self, keyName):
+        if keyName == "W" or keyName == "A" or keyName == "S" or keyName == "D" or keyName == "Q" or keyName == "E":
+            self._lastMoved = time.perf_counter()
+            self._pressedKeys.add(keyName)
+
+    def _keyReleased(self, keyName):
+        if keyName == "W" or keyName == "A" or keyName == "S" or keyName == "D" or keyName == "Q" or keyName == "E":
+            self._pressedKeys.remove(keyName)
+
+    def _processMovement(self):
+        delta = min(self._currentFrame - self._lastFrame, 0.2)
+        delta *= 5
+
+        if "W" in self._pressedKeys:
+            self._moveForward(delta)
+        
+        if "S" in self._pressedKeys:
+            self._moveBack(delta)
+
+        if "A" in self._pressedKeys:
+            self._moveLeft(delta)
+
+        if "D" in self._pressedKeys:
+            self._moveRight(delta)
+
+        if "Q" in self._pressedKeys:
+            self._moveUp(delta)
+
+        if "E" in self._pressedKeys:
+            self._moveDown(delta)
