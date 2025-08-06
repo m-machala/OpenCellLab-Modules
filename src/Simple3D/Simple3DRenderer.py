@@ -5,6 +5,7 @@ from ExportFunctions import ExportFunction, ControlElement
 from PIL import Image, ImageDraw
 import numpy as np
 import time
+from operator import itemgetter
 
 halfCubeWidth = 0.5
 cubeVertices = np.array([[-halfCubeWidth, -halfCubeWidth, -halfCubeWidth],
@@ -62,46 +63,57 @@ class Simple3DRenderer(Renderer):
         testPosition1["xPosition"] = 0
         testPosition1["yPosition"] = 0
         testPosition1["zPosition"] = 10
+        testPosition1["color"] = (255, 0, 0)
 
         testPosition2 = {}
         testPosition2["xPosition"] = 1
         testPosition2["yPosition"] = 1
         testPosition2["zPosition"] = 20
+        testPosition2["color"] = (0, 255, 0)
 
         testPosition3 = {}
         testPosition3["xPosition"] = -2
         testPosition3["yPosition"] = 0
         testPosition3["zPosition"] = 30
+        testPosition3["color"] = (0, 0, 255)
 
         testPosition4 = {}
         testPosition4["xPosition"] = 12
         testPosition4["yPosition"] = -4
         testPosition4["zPosition"] = 50
+        testPosition4["color"] = (255, 255, 0)
 
         testPosition5 = {}
         testPosition5["xPosition"] = 48
         testPosition5["yPosition"] = 5
         testPosition5["zPosition"] = 13
+        testPosition5["color"] = (0, 255, 255)
 
         testPosition6 = {}
         testPosition6["xPosition"] = -5
         testPosition6["yPosition"] = -5
         testPosition6["zPosition"] = 8
+        testPosition6["color"] = (255, 0, 255)
 
 
         cell3DList = [testPosition1, testPosition2, testPosition3, testPosition4, testPosition5, testPosition6]
 
+        polygons = []
         for cell in cell3DList:
-            polygons = self._getCubePolygons((cell["xPosition"], cell["yPosition"], cell["zPosition"]))
-            for polygon in polygons:
-                outputImageDraw.polygon(polygon, "blue", "blue")
+            cellPolygons = self._getCubePolygons((cell["xPosition"], cell["yPosition"], cell["zPosition"]), cell["color"])
+            polygons += cellPolygons
 
+        polygons.sort(reverse=True, key=itemgetter(0))
+        
+        for polygon in polygons:
+            outputImageDraw.polygon(polygon[1], polygon[2], polygon[2])
+        
         # Convert PIL image to PNG bytes
         buffer = BytesIO()
         outputImage.save(buffer, format="PNG")
         return buffer.getvalue()
 
-    def _getCubePolygons(self, coordinates):
+    def _getCubePolygons(self, coordinates, color):
         polygons = []
         
         screenCenterX = self.outputResolutionW / 2
@@ -110,11 +122,16 @@ class Simple3DRenderer(Renderer):
         for quad in cubeQuads:
             polygon = []
             skip = False
+            closestDistance = -1
             for vertexIndex in quad:
                 vertex = cubeVertices[vertexIndex]
                 x = vertex[0] + coordinates[0] - self._cameraPosition[0]
                 y = vertex[1] + coordinates[1] - self._cameraPosition[1]
                 z = vertex[2] + coordinates[2] - self._cameraPosition[2]
+
+                currentDistance = np.sqrt(x**2 + y**2 + z**2)
+                if currentDistance < closestDistance or closestDistance == -1:
+                    closestDistance = currentDistance
 
                 pitch, yaw, roll = self._cameraRotation
 
@@ -132,7 +149,7 @@ class Simple3DRenderer(Renderer):
 
                 polygon.append((x, y))
             if not skip:
-                polygons.append(polygon)
+                polygons.append([closestDistance, polygon, color])
         
         return polygons
     
