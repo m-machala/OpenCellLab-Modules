@@ -37,6 +37,8 @@ class Simple3DRenderer(Renderer):
         self._cameraMovementSpeed = 0.25
         self._cameraRotationSpeed = 0.05
 
+        self._movementKeyCounter = 0
+
         self.test1 = 0
         self.test2 = 0
 
@@ -229,15 +231,21 @@ class Simple3DRenderer(Renderer):
 
     def _keyPressed(self, keyName):
         if keyName == "W" or keyName == "A" or keyName == "S" or keyName == "D" or keyName == "Q" or keyName == "E":
-            self._lastMoved = time.perf_counter()
+            if self._movementKeyCounter == 0:
+                self._lastMoved = time.perf_counter()
+
+            self._movementKeyCounter += 1
             self._pressedKeys.add(keyName)
 
     def _keyReleased(self, keyName):
         if keyName == "W" or keyName == "A" or keyName == "S" or keyName == "D" or keyName == "Q" or keyName == "E":
+
+            if self._movementKeyCounter > 0:
+                self._movementKeyCounter -= 1
             self._pressedKeys.remove(keyName)
 
     def _processMovement(self):
-        delta = min(self._currentFrame - self._lastFrame, 0.2)
+        delta = min(self._currentFrame - self._lastFrame, 0.1)
         delta *= 5
 
         if "W" in self._pressedKeys:
