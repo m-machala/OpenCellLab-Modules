@@ -61,48 +61,10 @@ class Simple3DRenderer(Renderer):
         outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color = self._backgroundColor)
         outputImageDraw = ImageDraw.Draw(outputImage)
 
-        testPosition1 = {}
-        testPosition1["xPosition"] = 0
-        testPosition1["yPosition"] = 0
-        testPosition1["zPosition"] = 10
-        testPosition1["color"] = (255, 0, 0)
-
-        testPosition2 = {}
-        testPosition2["xPosition"] = 1
-        testPosition2["yPosition"] = 1
-        testPosition2["zPosition"] = 20
-        testPosition2["color"] = (0, 255, 0)
-
-        testPosition3 = {}
-        testPosition3["xPosition"] = -2
-        testPosition3["yPosition"] = 0
-        testPosition3["zPosition"] = 30
-        testPosition3["color"] = (0, 0, 255)
-
-        testPosition4 = {}
-        testPosition4["xPosition"] = 12
-        testPosition4["yPosition"] = -4
-        testPosition4["zPosition"] = 50
-        testPosition4["color"] = (255, 255, 0)
-
-        testPosition5 = {}
-        testPosition5["xPosition"] = 48
-        testPosition5["yPosition"] = 5
-        testPosition5["zPosition"] = 13
-        testPosition5["color"] = (0, 255, 255)
-
-        testPosition6 = {}
-        testPosition6["xPosition"] = -5
-        testPosition6["yPosition"] = -5
-        testPosition6["zPosition"] = 8
-        testPosition6["color"] = (255, 0, 255)
-
-
-        cell3DList = [testPosition1, testPosition2, testPosition3, testPosition4, testPosition5, testPosition6]
-
         polygons = []
         for cell in cell3DList:
-            cellPolygons = self._getCubePolygons((cell["xPosition"], cell["yPosition"], cell["zPosition"]), cell["color"])
+            data = cell.cellData
+            cellPolygons = self._getCubePolygons((data["xPosition"], data["yPosition"], data["zPosition"]), data["color"])
             polygons += cellPolygons
 
         polygons.sort(reverse=True, key=itemgetter(0))
@@ -163,7 +125,7 @@ class Simple3DRenderer(Renderer):
 
     
     def convertFromImageCoordinates(self, xCoordinate, yCoordinate):
-        pass
+        return (round(self._cameraPosition[0]), round(self._cameraPosition[1]), round(self._cameraPosition[2]))
 
     def _primaryDrag(self, originalData, newData):
         rotationVector = [(newData[1] - originalData[1]) / self.outputResolutionH * 75, (originalData[0] - newData[0]) / self.outputResolutionW * 75, 0]
