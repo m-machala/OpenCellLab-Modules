@@ -34,8 +34,9 @@ class Simple3DRenderer(Renderer):
 
         self._cameraPosition = np.array([0.0, 0.0, 0.0]) # X, Y, Z
         self._cameraRotation = np.array([0.0, 0.0, 0.0]) # pitch, yaw, roll 
-        self._cameraMovementSpeed = 0.25
+        self._cameraMovementSpeed = 1
         self._cameraRotationSpeed = 0.05
+        self._renderDistance = 10
 
         self._movementKeyCounter = 0
 
@@ -45,8 +46,9 @@ class Simple3DRenderer(Renderer):
         self._FOV = 90
 
         self._exportFunctions = [ExportFunction(self._changeFOV, "FOV", ControlElement.SLIDER, [1, 1799, 900]),
-                                 ExportFunction(self._changeMovementSpeed, "Movement speed", ControlElement.SLIDER, [1, 1000, 100]),
-                                 ExportFunction(self._changeRotationSpeed, "Rotation speed", ControlElement.SLIDER, [1, 50, 5])]
+                                 ExportFunction(self._changeMovementSpeed, "Movement speed", ControlElement.SLIDER, [1, 1000, int(self._cameraMovementSpeed * 100)]),
+                                 ExportFunction(self._changeRotationSpeed, "Rotation speed", ControlElement.SLIDER, [1, 50, int(self._cameraRotationSpeed * 100)]),
+                                 ExportFunction(self._changeRenderDistance, "Render distance", ControlElement.SLIDER, [1, 1000, int(self._renderDistance)])]
 
         self._backgroundColor = (0, 0, 0)
 
@@ -64,6 +66,13 @@ class Simple3DRenderer(Renderer):
         polygons = []
         for cell in cell3DList:
             data = cell.cellData
+            xPosition = data["xPosition"]
+            yPosition = data["yPosition"]
+            zPosition = data["zPosition"]
+
+            if abs(self._cameraPosition[0] - xPosition) > self._renderDistance or abs(self._cameraPosition[1] - yPosition) > self._renderDistance or abs(self._cameraPosition[2] - zPosition) > self._renderDistance:
+                continue
+
             cellPolygons = self._getCubePolygons((data["xPosition"], data["yPosition"], data["zPosition"]), data["color"])
             polygons += cellPolygons
 
@@ -190,6 +199,9 @@ class Simple3DRenderer(Renderer):
 
     def _changeRotationSpeed(self, speed):
         self._cameraRotationSpeed = speed / 100
+
+    def _changeRenderDistance(self, distance):
+        self._renderDistance = distance
 
     def _keyPressed(self, keyName):
         if keyName == "W" or keyName == "A" or keyName == "S" or keyName == "D" or keyName == "Q" or keyName == "E":
