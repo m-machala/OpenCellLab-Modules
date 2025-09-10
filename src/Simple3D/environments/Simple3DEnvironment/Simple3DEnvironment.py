@@ -35,8 +35,8 @@ class Simple3DEnvironment(Environment):
 
 
     def _primaryClick(self, data):
-        self._addUserCell(data)
-
+        #self._addUserCell(data)
+        pass
     def _primaryDrag(self, originalData, newData):
         self._primaryClick(newData)
-
+        self._addUserCell(newData)

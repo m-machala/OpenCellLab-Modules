@@ -134,6 +134,52 @@ class Simple3DRenderer(Renderer):
 
     
     def convertFromImageCoordinates(self, xCoordinate, yCoordinate):
+        xFromCenter = xCoordinate - self.outputResolutionW / 2
+        yFromCenter = yCoordinate - self.outputResolutionH / 2 
+
+        xScaled = xFromCenter / (self.outputResolutionW / 2)
+        yScaled = yFromCenter / (self.outputResolutionW / 2)
+
+        xAngle = self._FOV * xScaled
+        yAngle = self._FOV * yScaled
+
+        direction = np.array([np.tan(xAngle), np.tan(yAngle), -1.0])
+
+        direction = direction / np.linalg.norm(direction)
+
+        pitch, yaw, roll = self._cameraRotation
+        rotationMatrix = self._getRotationMatrix(pitch, yaw, roll)
+        worldDirection = direction @ rotationMatrix.T
+
+        renderDistance = self._renderDistance
+        searchStart = (self._cameraPosition[0], self._cameraPosition[1], self._cameraPosition[2])
+        searchEnd = (searchStart[0] + worldDirection[0] * renderDistance, searchStart[1] + worldDirection[1] * renderDistance, searchStart[2] + worldDirection[2] * renderDistance)
+        
+        xSign = np.sign(worldDirection[0])
+        searchX = round(searchStart[0]) + 0.5 * xSign
+        xEdges = []
+        if xSign != 0:
+            while (xSign > 0 and searchX <= searchEnd[0]) or (xSign < 0 and searchX >= searchEnd[0]):
+                xEdges.append(searchX)
+                searchX += xSign
+
+        ySign = np.sign(worldDirection[1])
+        searchY = round(searchStart[1]) + 0.5 * ySign
+        yEdges = []
+        if ySign != 0:
+            while (ySign > 0 and searchY <= searchEnd[1]) or (ySign < 0 and searchY >= searchEnd[1]):
+                yEdges.append(searchY)
+                searchY += ySign
+
+        zSign = np.sign(worldDirection[2])
+        searchZ = round(searchStart[2]) + 0.5 * zSign
+        zEdges = []
+        if zSign != 0:
+            while (zSign > 0 and searchZ <= searchEnd[2]) or (zSign < 0 and searchZ >= searchEnd[2]):
+                zEdges.append(searchZ)
+                searchZ += zSign
+ 
+
         return (round(self._cameraPosition[0]), round(self._cameraPosition[1]), round(self._cameraPosition[2]))
 
     def _primaryDrag(self, originalData, newData):
