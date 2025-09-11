@@ -48,7 +48,7 @@ class Simple3DRenderer(Renderer):
         self._exportFunctions = [ExportFunction(self._changeFOV, "FOV", ControlElement.SLIDER, [1, 1799, 900]),
                                  ExportFunction(self._changeMovementSpeed, "Movement speed", ControlElement.SLIDER, [1, 1000, int(self._cameraMovementSpeed * 100)]),
                                  ExportFunction(self._changeRotationSpeed, "Rotation speed", ControlElement.SLIDER, [1, 50, int(self._cameraRotationSpeed * 100)]),
-                                 ExportFunction(self._changeRenderDistance, "Render distance", ControlElement.SLIDER, [1, 1000, int(self._renderDistance)])]
+                                 ExportFunction(self._changeRenderDistance, "Render distance", ControlElement.SLIDER, [1, 250, int(self._renderDistance)])]
 
         self._backgroundColor = (0, 0, 0)
 
@@ -135,52 +135,127 @@ class Simple3DRenderer(Renderer):
     
     def convertFromImageCoordinates(self, xCoordinate, yCoordinate):
         xFromCenter = xCoordinate - self.outputResolutionW / 2
-        yFromCenter = yCoordinate - self.outputResolutionH / 2 
+        yFromCenter = yCoordinate - self.outputResolutionH / 2
 
         xScaled = xFromCenter / (self.outputResolutionW / 2)
         yScaled = yFromCenter / (self.outputResolutionW / 2)
 
-        xAngle = self._FOV * xScaled
-        yAngle = self._FOV * yScaled
+        fov = np.radians(self._FOV)
 
-        direction = np.array([np.tan(xAngle), np.tan(yAngle), -1.0])
+        cameraX = xScaled * np.tan(fov / 2)
+        cameraY = yScaled * np.tan(fov / 2)
 
+        direction = np.array([cameraX, cameraY, 1.0], dtype=float)
         direction = direction / np.linalg.norm(direction)
 
         pitch, yaw, roll = self._cameraRotation
         rotationMatrix = self._getRotationMatrix(pitch, yaw, roll)
         worldDirection = direction @ rotationMatrix.T
+        worldDirection = worldDirection / np.linalg.norm(worldDirection)
 
-        renderDistance = self._renderDistance
-        searchStart = (self._cameraPosition[0], self._cameraPosition[1], self._cameraPosition[2])
-        searchEnd = (searchStart[0] + worldDirection[0] * renderDistance, searchStart[1] + worldDirection[1] * renderDistance, searchStart[2] + worldDirection[2] * renderDistance)
-        
-        xSign = np.sign(worldDirection[0])
-        searchX = round(searchStart[0]) + 0.5 * xSign
-        xEdges = []
-        if xSign != 0:
-            while (xSign > 0 and searchX <= searchEnd[0]) or (xSign < 0 and searchX >= searchEnd[0]):
-                xEdges.append(searchX)
-                searchX += xSign
+        renderDistance = float(self._renderDistance)
 
-        ySign = np.sign(worldDirection[1])
-        searchY = round(searchStart[1]) + 0.5 * ySign
-        yEdges = []
-        if ySign != 0:
-            while (ySign > 0 and searchY <= searchEnd[1]) or (ySign < 0 and searchY >= searchEnd[1]):
-                yEdges.append(searchY)
-                searchY += ySign
+        searchStart = (float(self._cameraPosition[0]),
+                       float(self._cameraPosition[1]),
+                       float(self._cameraPosition[2]))
 
-        zSign = np.sign(worldDirection[2])
-        searchZ = round(searchStart[2]) + 0.5 * zSign
-        zEdges = []
-        if zSign != 0:
-            while (zSign > 0 and searchZ <= searchEnd[2]) or (zSign < 0 and searchZ >= searchEnd[2]):
-                zEdges.append(searchZ)
-                searchZ += zSign
- 
+        voxelX = int(np.floor(searchStart[0] + 0.5))
+        voxelY = int(np.floor(searchStart[1] + 0.5))
+        voxelZ = int(np.floor(searchStart[2] + 0.5))
 
-        return (round(self._cameraPosition[0]), round(self._cameraPosition[1]), round(self._cameraPosition[2]))
+        stepX = int(np.sign(worldDirection[0]))
+        stepY = int(np.sign(worldDirection[1]))
+        stepZ = int(np.sign(worldDirection[2]))
+
+        if stepX > 0:
+            boundaryX = voxelX + 0.5
+        elif stepX < 0:
+            boundaryX = voxelX - 0.5
+        else:
+            boundaryX = float("inf")
+
+        if stepY > 0:
+            boundaryY = voxelY + 0.5
+        elif stepY < 0:
+            boundaryY = voxelY - 0.5
+        else:
+            boundaryY = float("inf")
+
+        if stepZ > 0:
+            boundaryZ = voxelZ + 0.5
+        elif stepZ < 0:
+            boundaryZ = voxelZ - 0.5
+        else:
+            boundaryZ = float("inf")
+
+        if boundaryX is float("inf") or abs(worldDirection[0]) < 1e-12:
+            tMaxX = float("inf")
+        else:
+            tMaxX = (boundaryX - searchStart[0]) / worldDirection[0]
+
+        if boundaryY is float("inf") or abs(worldDirection[1]) < 1e-12:
+            tMaxY = float("inf")
+        else:
+            tMaxY = (boundaryY - searchStart[1]) / worldDirection[1]
+
+        if boundaryZ is float("inf") or abs(worldDirection[2]) < 1e-12:
+            tMaxZ = float("inf")
+        else:
+            tMaxZ = (boundaryZ - searchStart[2]) / worldDirection[2]
+
+        if abs(worldDirection[0]) < 1e-12:
+            tDeltaX = float("inf")
+        else:
+            tDeltaX = abs(1.0 / worldDirection[0])
+
+        if abs(worldDirection[1]) < 1e-12:
+            tDeltaY = float("inf")
+        else:
+            tDeltaY = abs(1.0 / worldDirection[1])
+
+        if abs(worldDirection[2]) < 1e-12:
+            tDeltaZ = float("inf")
+        else:
+            tDeltaZ = abs(1.0 / worldDirection[2])
+
+        foundCoordinates = []
+        foundCoordinates.append([voxelX, voxelY, voxelZ, -1])
+
+        t = 0.0
+        steps = 0
+        maxSteps = int(2 * renderDistance + 1)
+
+        while steps < maxSteps:
+            if tMaxX <= tMaxY and tMaxX <= tMaxZ:
+                t = tMaxX
+                if t > renderDistance:
+                    break
+                voxelX += stepX
+                tMaxX += tDeltaX
+            elif tMaxY <= tMaxX and tMaxY <= tMaxZ:
+                t = tMaxY
+                if t > renderDistance:
+                    break
+                voxelY += stepY
+                tMaxY += tDeltaY
+            else:
+                t = tMaxZ
+                if t > renderDistance:
+                    break
+                voxelZ += stepZ
+                tMaxZ += tDeltaZ
+
+            foundCoordinates.append([voxelX, voxelY, voxelZ, t])
+            steps += 1
+
+            if (abs(voxelX - searchStart[0]) > renderDistance or
+                abs(voxelY - searchStart[1]) > renderDistance or
+                abs(voxelZ - searchStart[2]) > renderDistance):
+                break
+
+        foundCoordinates.sort(key=itemgetter(-1))
+        return foundCoordinates
+
 
     def _primaryDrag(self, originalData, newData):
         rotationVector = [(newData[1] - originalData[1]) / self.outputResolutionH * 75, (originalData[0] - newData[0]) / self.outputResolutionW * 75, 0]
