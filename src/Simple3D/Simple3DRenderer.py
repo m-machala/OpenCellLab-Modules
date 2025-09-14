@@ -79,7 +79,7 @@ class Simple3DRenderer(Renderer):
         polygons.sort(reverse=True, key=itemgetter(0))
         
         for polygon in polygons:
-            outputImageDraw.polygon(polygon[1], polygon[2], polygon[2])
+            outputImageDraw.polygon(polygon[1], polygon[2], (0, 0, 0))
         
         # Convert PIL image to PNG bytes
         buffer = BytesIO()
@@ -95,7 +95,7 @@ class Simple3DRenderer(Renderer):
         for quad in cubeQuads:
             polygon = []
             skip = False
-            closestDistance = -1
+            distanceSum = 0
             for vertexIndex in quad:
                 vertex = cubeVertices[vertexIndex]
                 x = vertex[0] + coordinates[0] - self._cameraPosition[0]
@@ -103,8 +103,7 @@ class Simple3DRenderer(Renderer):
                 z = vertex[2] + coordinates[2] - self._cameraPosition[2]
 
                 currentDistance = np.sqrt(x**2 + y**2 + z**2)
-                if currentDistance < closestDistance or closestDistance == -1:
-                    closestDistance = currentDistance
+                distanceSum += currentDistance
 
                 pitch, yaw, roll = self._cameraRotation
 
@@ -122,7 +121,8 @@ class Simple3DRenderer(Renderer):
 
                 polygon.append((x, y))
             if not skip:
-                polygons.append([closestDistance, polygon, color])
+                averageDistance = distanceSum / len(quad)
+                polygons.append([averageDistance, polygon, color])
         
         return polygons
     
