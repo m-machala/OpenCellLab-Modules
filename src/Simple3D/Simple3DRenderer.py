@@ -88,7 +88,7 @@ class Simple3DRenderer(Renderer):
 
     def _getCubePolygons(self, coordinates, color):
         polygons = []
-        
+
         screenCenterX = self.outputResolutionW / 2
         screenCenterY = self.outputResolutionH / 2
 
@@ -96,6 +96,7 @@ class Simple3DRenderer(Renderer):
             polygon = []
             skip = False
             distanceSum = 0
+
             for vertexIndex in quad:
                 vertex = cubeVertices[vertexIndex]
                 x = vertex[0] + coordinates[0] - self._cameraPosition[0]
@@ -124,6 +125,9 @@ class Simple3DRenderer(Renderer):
                 averageDistance = distanceSum / len(quad)
                 polygons.append([averageDistance, polygon, color])
         
+        polygons.sort(key=itemgetter(0))
+        if len(polygons) > 3:
+            return polygons[:3]
         return polygons
     
     def _getBaseFromAngleAndHeight(self, angle, height):
