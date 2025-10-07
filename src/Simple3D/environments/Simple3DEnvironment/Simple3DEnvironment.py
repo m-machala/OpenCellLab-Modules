@@ -40,6 +40,28 @@ class Simple3DEnvironment(Environment):
 
         self._spawnCell(absoluteX, absoluteY, absoluteZ, newCellBrain)
 
+    def deleteCurrentCell(self):
+        currentCell = self._cellExecutor.currentCell
+        if currentCell == None:
+            return
+        
+        currentCellX = currentCell.cellData["xPosition"]
+        currentCellY = currentCell.cellData["yPosition"]
+        currentCellZ = currentCell.cellData["zPosition"]
+
+        self._updateCellMap(currentCellX, currentCellY, currentCellZ)
+        self._cellExecutor.removeCell(currentCell)
+
+    def deleteCurrentSpawnNewCell(self, newCellBrain):
+        currentCell = self._cellExecutor.currentCell
+        xPosition = currentCell.cellData["xPosition"]
+        yPosition = currentCell.cellData["yPosition"]
+        zPosition = currentCell.cellData["zPosition"]
+
+        self.deleteCurrentCell()
+
+        self._spawnCell(xPosition, yPosition, zPosition, newCellBrain)
+
 
     def _spawnCell(self, xCoordinate, yCoordinate, zCoordinate, newCellBrain):
         if (xCoordinate, yCoordinate, zCoordinate) in self._cellMap:
