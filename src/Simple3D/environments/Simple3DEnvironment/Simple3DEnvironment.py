@@ -7,10 +7,43 @@ class Simple3DEnvironment(Environment):
     def __init__(self, renderer):
         super().__init__(renderer)
 
+        self._cellMap = {}
+        self._stepCount = 0
+
+    def _updateCellMap(self, x, y, z, cell = None):
+        if cell == None:
+            self._cellMap.pop((x, y, z), None)
+        else:
+            self._cellMap[(x, y, z)] = cell
+
+    def isCellType(self, relativeX, relativeY, relativeZ, cellType):
+        currentCell = self._cellExecutor.currentCell
+        if not currentCell:
+            return None
+
+        absoluteX = relativeX + currentCell.cellData["xPosition"]
+        absoluteY = relativeY + currentCell.cellData["yPosition"]
+        absoluteZ = relativeZ + currentCell.cellData["zPosition"]
+
+        if (absoluteX, absoluteY, absoluteZ) in self._cellMap:
+            return isinstance(self._cellMap[(absoluteX, absoluteY, absoluteZ)], cellType)
+        return None
+    
+    def spawnCell(self, relativeX, relativeY, relativeZ, newCellBrain):
+        currentCell = self._cellExecutor.currentCell
+        if not currentCell:
+            return
+
+        absoluteX = relativeX + currentCell.cellData["xPosition"]
+        absoluteY = relativeY + currentCell.cellData["yPosition"]
+        absoluteZ = relativeZ + currentCell.cellData["zPosition"]
+
+        self._spawnCell(absoluteX, absoluteY, absoluteZ, newCellBrain)
+
+
     def _spawnCell(self, xCoordinate, yCoordinate, zCoordinate, newCellBrain):
-        for cell in self._cellExecutor.cellList:
-            if cell.cellData["xPosition"] == xCoordinate and cell.cellData["yPosition"] == yCoordinate and cell.cellData["zPosition"] == zCoordinate:
-                return
+        if (xCoordinate, yCoordinate, zCoordinate) in self._cellMap:
+            return
             
         newCell = Cell(newCellBrain)
         newCell.cellData["xPosition"] = xCoordinate
@@ -23,6 +56,8 @@ class Simple3DEnvironment(Environment):
             newCell.cellData["color"] = (255, 255, 255)
         
         self._cellExecutor.addCell(newCell)
+
+        self._updateCellMap(xCoordinate, yCoordinate, zCoordinate, newCell)
 
     def _addUserCell(self, position):
         xCoordinate = position[0]
@@ -42,10 +77,14 @@ class Simple3DEnvironment(Environment):
         yCoordinate = position[1]
         zCoordinate = position[2]
 
-        for cell in self._cellExecutor.cellList:
-            if cell.cellData["xPosition"] == xCoordinate and cell.cellData["yPosition"] == yCoordinate and cell.cellData["zPosition"] == zCoordinate:
-                self._cellExecutor.removeCell(cell)
-                return
+        if (xCoordinate, yCoordinate, zCoordinate) in self._cellMap:
+            cell = self._cellMap[(xCoordinate, yCoordinate, zCoordinate)]
+            self._cellExecutor.removeCell(cell)
+            self._updateCellMap(xCoordinate, yCoordinate, zCoordinate)
+        return
+
+    def _executorClearedCells(self):
+        self._cellMap = {}
 
     def _primaryClick(self, data):
         found = False
