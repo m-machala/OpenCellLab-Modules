@@ -16,6 +16,9 @@ class Simple3DEnvironment(Environment):
         else:
             self._cellMap[(x, y, z)] = cell
 
+    def getCurrentStepNumber(self):
+        return self._stepCount
+
     def isCellType(self, relativeX, relativeY, relativeZ, cellType):
         currentCell = self._cellExecutor.currentCell
         if not currentCell:
@@ -26,7 +29,7 @@ class Simple3DEnvironment(Environment):
         absoluteZ = relativeZ + currentCell.cellData["zPosition"]
 
         if (absoluteX, absoluteY, absoluteZ) in self._cellMap:
-            return isinstance(self._cellMap[(absoluteX, absoluteY, absoluteZ)], cellType)
+            return isinstance(self._cellMap[(absoluteX, absoluteY, absoluteZ)].cellBrain, cellType)
         return None
     
     def spawnCell(self, relativeX, relativeY, relativeZ, newCellBrain):
@@ -107,6 +110,9 @@ class Simple3DEnvironment(Environment):
 
     def _executorClearedCells(self):
         self._cellMap = {}
+
+    def _cellsCycled(self):
+        self._stepCount += 1
 
     def _primaryClick(self, data):
         found = False
