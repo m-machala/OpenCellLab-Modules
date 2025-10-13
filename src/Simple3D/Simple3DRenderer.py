@@ -53,6 +53,8 @@ class Simple3DRenderer(Renderer):
         self._backgroundColor = (0, 0, 0)
 
     def render(self, cell3DList):
+        pitch, yaw, roll = self._cameraRotation
+        self._transformationMatrix = self._getRotationMatrix(pitch, yaw, roll)
         outputBaseWidth = self.outputResolutionW
         outputBaseHeight = self.outputResolutionH
 
@@ -92,26 +94,26 @@ class Simple3DRenderer(Renderer):
         screenCenterX = self.outputResolutionW / 2
         screenCenterY = self.outputResolutionH / 2
 
+        transformedVertices = []
+
+        for vertex in cubeVertices:
+            x = vertex[0] + coordinates[0] - self._cameraPosition[0]
+            y = vertex[1] + coordinates[1] - self._cameraPosition[1]
+            z = vertex[2] + coordinates[2] - self._cameraPosition[2]
+            vector = np.array([x, y, z])
+            transformed = vector @ self._transformationMatrix
+            transformedVertices.append(np.asarray(transformed).flatten())
+
         for quad in cubeQuads:
             polygon = []
             skip = False
             distanceSum = 0
 
             for vertexIndex in quad:
-                vertex = cubeVertices[vertexIndex]
-                x = vertex[0] + coordinates[0] - self._cameraPosition[0]
-                y = vertex[1] + coordinates[1] - self._cameraPosition[1]
-                z = vertex[2] + coordinates[2] - self._cameraPosition[2]
+                x, y, z = transformedVertices[vertexIndex]                
 
                 currentDistance = np.sqrt(x**2 + y**2 + z**2)
                 distanceSum += currentDistance
-
-                pitch, yaw, roll = self._cameraRotation
-
-                transformationMatrix = self._getRotationMatrix(pitch, yaw, roll)
-                vector = np.array([x, y, z])
-                transformed = vector @ transformationMatrix
-                x, y, z = np.asarray(transformed).flatten()
 
                 if z <= 0:
                     skip = True
