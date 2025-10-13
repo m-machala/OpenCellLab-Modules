@@ -1,0 +1,40 @@
+{
+    "package type": "cell",
+	"package name": "2D Life",
+	"author name": "m_machala",
+	"package description": "Two-dimensional implementation of Conway's Game of Life running in a three-dimensional environment.",
+	"package path": "2DLife.py",
+	"environment class": "Simple3DEnvironment",
+	"cell types": [
+	{
+		"cell class": "DeadXY",
+		"cell name": "Dead cell - XY plane",
+		"cell description": "2D dead game of life cell operating on the XY plane."
+	}, 
+	{
+		"cell class": "DeadYZ",
+		"cell name": "Dead cell - YZ plane",
+		"cell description": "2D dead game of life cell operating on the YZ plane."
+	}, 
+	{
+		"cell class": "DeadZX",
+		"cell name": "Dead cell - ZX plane",
+		"cell description": "2D dead game of life cell operating on the ZX plane."
+	}, 
+	{
+		"cell class": "AliveXY",
+		"cell name": "Alive cell - XY plane",
+		"cell description": "2D living game of life cell operating on the XY plane"
+	}, 
+	{
+		"cell class": "AliveYZ",
+		"cell name": "Alive cell - YZ plane",
+		"cell description": "2D living game of life cell operating on the YZ plane"
+	}, 
+	{
+		"cell class": "AliveZX",
+		"cell name": "Alive cell - ZX plane",
+		"cell description": "2D living game of life cell operating on the ZX plane"
+	}
+	]
+}
