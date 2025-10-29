@@ -65,6 +65,33 @@ class Simple3DEnvironment(Environment):
 
         self._spawnCell(xPosition, yPosition, zPosition, newCellBrain)
 
+    def checkAreaForCells(self, x1, x2, y1, y2, z1, z2): #coordinates relative to the currently active cells. inclusive from both sides
+        currentCellData = self._cellExecutor.currentCell.cellData
+        xPosition = currentCellData["xPosition"]
+        yPosition = currentCellData["yPosition"]
+        zPosition = currentCellData["zPosition"]
+
+        x1 += xPosition
+        x2 += xPosition
+        y1 += yPosition
+        y2 += yPosition
+        z1 += zPosition
+        z2 += zPosition
+
+        foundTypes = []
+
+        for cell in self._cellExecutor.cellList:
+            cellData = cell.cellData
+            if cellData == currentCellData:
+                continue
+
+            if min(x1, x2) <= cellData["xPosition"] <= max(x1, x2) and \
+               min(y1, y2) <= cellData["yPosition"] <= max(y1, y2) and \
+               min(z1, z2) <= cellData["zPosition"] <= max(z1, z2):
+                foundTypes.append(type(cell.cellBrain))
+        
+        return foundTypes
+
 
     def _spawnCell(self, xCoordinate, yCoordinate, zCoordinate, newCellBrain):
         if (xCoordinate, yCoordinate, zCoordinate) in self._cellMap:
