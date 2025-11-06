@@ -1,16 +1,23 @@
 from base_classes.CellBrain import CellBrain
+from enum import Enum
+
+offset = [-1, 0, 1]
+
+class AxisPair(Enum):
+    XY = [offset, offset, [0]]
+    YZ = [[0], offset, offset]
+    ZX = [offset, [0], offset]
 
 class DeadCell(CellBrain):
     COLOR = (0, 64, 255)
-    def __init__(self, environment, xAxis, yAxis, zAxis):
+    def __init__(self, environment, xy, yz, zx):
         super().__init__(environment)
-        self.xOffset = [-1, 0, 1] if xAxis else [0]
-        self.yOffset = [-1, 0, 1] if yAxis else [0]
-        self.zOffset = [-1, 0, 1] if zAxis else [0]
 
-        self.xAxis = xAxis
-        self.yAxis = yAxis
-        self.zAxis = zAxis
+        self.xy = xy
+        self.yz = yz
+        self.zx = zx
+
+        self.activeAxis = AxisPair.XY.value if xy else AxisPair.YZ.value if yz else AxisPair.ZX.value if zx else None
 
         self.neighborCount = 2
 
@@ -20,18 +27,29 @@ class DeadCell(CellBrain):
         if currentStep == 0:
             return
         elif currentStep == 1:
-            self.neighborCount = 0
-            for x in self.xOffset:
-                for y in self.yOffset:
-                    for z in self.zOffset:
-                        if x == 0 and y == 0 and z == 0:
-                            continue
+            pairsToCheck = []
+            checkedCoordinates = []
+            if self.activeAxis:
+                pairsToCheck.append(self.activeAxis)
 
-                        if self._environment.isCellType(x, y, z, AliveCell):
-                            self.neighborCount += 1
+            self.neighborCount = 0
+            for checkedPair in pairsToCheck:
+                for x in checkedPair[0]:
+                    for y in checkedPair[1]:
+                        for z in checkedPair[2]:
+                            if x == 0 and y == 0 and z == 0:
+                                continue
+
+                            coordinate = (x, y, z)
+                            if coordinate in checkedCoordinates:
+                                continue
+                            checkedCoordinates.append(coordinate)
+                            
+                            if self._environment.isCellType(x, y, z, AliveCell):
+                                self.neighborCount += 1
         else:
             if self.neighborCount == 3:
-                self._environment.deleteCurrentSpawnNewCell(AliveCell(self._environment, self.xAxis, self.yAxis, self.zAxis))
+                self._environment.deleteCurrentSpawnNewCell(AliveCell(self._environment, self.xy, self.yz, self.zx))
             elif self.neighborCount == 0:
                 self._environment.deleteCurrentCell()
 
@@ -56,40 +74,64 @@ class DeadZX(DeadCell):
 
 class AliveCell(CellBrain):
     COLOR = (0, 255, 255)
-    def __init__(self, environment, xAxis, yAxis, zAxis):
+    def __init__(self, environment, xy, yz, zx):
         super().__init__(environment)
-        self.xOffset = [-1, 0, 1] if xAxis else [0]
-        self.yOffset = [-1, 0, 1] if yAxis else [0]
-        self.zOffset = [-1, 0, 1] if zAxis else [0]
-        
-        self.xAxis = xAxis
-        self.yAxis = yAxis
-        self.zAxis = zAxis
+
+        self.xy = xy
+        self.yz = yz
+        self.zx = zx
+
+        self.activeAxis = AxisPair.XY.value if xy else AxisPair.YZ.value if yz else AxisPair.ZX.value if zx else None
 
         self.neighborCount = 2
+
     def run(self):
         currentStep = self._environment.getCurrentStepNumber() % 3
 
         if currentStep == 0:
-            for x in self.xOffset:
-                for y in self.yOffset:
-                    for z in self.zOffset:
-                        if x == 0 and y == 0 and z == 0:
-                            continue
-                        self._environment.spawnCell(x, y, z, DeadCell(self._environment, self.xAxis, self.yAxis, self.zAxis))
-        elif currentStep == 1:
+            pairsToSpawn = []
+            spawnedCoordinates = []
+            if self.activeAxis:
+                pairsToSpawn.append(self.activeAxis)
+
             self.neighborCount = 0
-            for x in self.xOffset:
-                for y in self.yOffset:
-                    for z in self.zOffset:
-                        if x == 0 and y == 0 and z == 0:
-                            continue
-                        
-                        if self._environment.isCellType(x, y, z, AliveCell):
-                            self.neighborCount += 1
+            for checkedPair in pairsToSpawn:
+                for x in checkedPair[0]:
+                    for y in checkedPair[1]:
+                        for z in checkedPair[2]:
+                            if x == 0 and y == 0 and z == 0:
+                                continue
+                            coordinate = (x, y, z)
+                            if coordinate in spawnedCoordinates:
+                                continue
+                            spawnedCoordinates.append(coordinate)
+                            
+                            self._environment.spawnCell(x, y, z, DeadCell(self._environment, self.xy, self.yz, self.zx))
+                            
+        elif currentStep == 1:
+            pairsToCheck = []
+            checkedCoordinates = []
+            if self.activeAxis:
+                pairsToCheck.append(self.activeAxis)
+
+            self.neighborCount = 0
+            for checkedPair in pairsToCheck:
+                for x in checkedPair[0]:
+                    for y in checkedPair[1]:
+                        for z in checkedPair[2]:
+                            if x == 0 and y == 0 and z == 0:
+                                continue
+
+                            coordinate = (x, y, z)
+                            if coordinate in checkedCoordinates:
+                                continue
+                            checkedCoordinates.append(coordinate)
+                            
+                            if self._environment.isCellType(x, y, z, AliveCell):
+                                self.neighborCount += 1
         else:
             if self.neighborCount < 2 or self.neighborCount > 3:
-                self._environment.deleteCurrentSpawnNewCell(DeadCell(self._environment, self.xAxis, self.yAxis, self.zAxis))
+                self._environment.deleteCurrentSpawnNewCell(DeadCell(self._environment, self.xy, self.yz, self.zx))
 
 class AliveXY(AliveCell):
     COLOR = (0, 255, 255)
