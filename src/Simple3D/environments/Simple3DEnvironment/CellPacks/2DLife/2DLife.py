@@ -1,152 +1,157 @@
 from base_classes.CellBrain import CellBrain
-from enum import Enum
 
-offset = [-1, 0, 1]
+PLANES = {
+    "xy": [(x, y, 0) for x in range(-1, 2) for y in range(-1, 2) if not (x == 0 and y == 0)],
+    "yz": [(0, y, z) for y in range(-1, 2) for z in range(-1, 2) if not (y == 0 and z == 0)],
+    "zx": [(x, 0, z) for x in range(-1, 2) for z in range(-1, 2) if not (x == 0 and z == 0)]
+}
 
-class AxisPair(Enum):
-    XY = [offset, offset, [0]]
-    YZ = [[0], offset, offset]
-    ZX = [offset, [0], offset]
-
-class DeadCell(CellBrain):
-    COLOR = (0, 64, 255)
-    def __init__(self, environment, xy, yz, zx):
+class LifeCell(CellBrain):
+    def __init__(self, environment, initialPlanes):
         super().__init__(environment)
+        self.initialPlanes = initialPlanes
+        self.neighborCount = 0
+        self._initialized = False
 
-        self.xy = xy
-        self.yz = yz
-        self.zx = zx
+    def getActivePlanes(self):
+        activePlanes = set()
 
-        self.activeAxis = AxisPair.XY.value if xy else AxisPair.YZ.value if yz else AxisPair.ZX.value if zx else None
+        for plane in PLANES.keys():
+            if self._environment.testForTag(plane):
+                activePlanes.add(plane)
 
-        self.neighborCount = 2
+        x_tags = self._environment.checkAreaForTags(float("-inf"), float("inf"), 0, 0, 0, 0)
+        if "anchor" in x_tags:
+            if "xy" in x_tags: activePlanes.add("xy")
+            if "zx" in x_tags: activePlanes.add("zx")
+
+        y_tags = self._environment.checkAreaForTags(0, 0, float("-inf"), float("inf"), 0, 0)
+        if "anchor" in y_tags:
+            if "xy" in y_tags: activePlanes.add("xy")
+            if "yz" in y_tags: activePlanes.add("yz")
+
+        z_tags = self._environment.checkAreaForTags(0, 0, 0, 0, float("-inf"), float("inf"))
+        if "anchor" in z_tags:
+            if "yz" in z_tags: activePlanes.add("yz")
+            if "zx" in z_tags: activePlanes.add("zx")
+        
+        return list(activePlanes)
 
     def run(self):
+        if not self._initialized:
+            self.initializeTags()
+            self._initialized = True
+
         currentStep = self._environment.getCurrentStepNumber() % 3
+        activePlanes = self.getActivePlanes()
 
         if currentStep == 0:
-            return
+            self.spawnNeighbors(activePlanes)
+
         elif currentStep == 1:
-            pairsToCheck = []
-            checkedCoordinates = []
-            if self.activeAxis:
-                pairsToCheck.append(self.activeAxis)
-
             self.neighborCount = 0
-            for checkedPair in pairsToCheck:
-                for x in checkedPair[0]:
-                    for y in checkedPair[1]:
-                        for z in checkedPair[2]:
-                            if x == 0 and y == 0 and z == 0:
-                                continue
+            
+            uniqueOffsets = set()
+            for plane in activePlanes:
+                for offset in PLANES[plane]:
+                    uniqueOffsets.add(offset)
+            
+            for dx, dy, dz in uniqueOffsets:
+                if self._environment.isCellType(dx, dy, dz, AliveCell):
+                    self.neighborCount += 1
 
-                            coordinate = (x, y, z)
-                            if coordinate in checkedCoordinates:
-                                continue
-                            checkedCoordinates.append(coordinate)
-                            
-                            if self._environment.isCellType(x, y, z, AliveCell):
-                                self.neighborCount += 1
         else:
-            if self.neighborCount == 3:
-                self._environment.deleteCurrentSpawnNewCell(AliveCell(self._environment, self.xy, self.yz, self.zx))
-            elif self.neighborCount == 0:
-                self._environment.deleteCurrentCell()
+            self.updateState(activePlanes)
 
-class DeadXY(DeadCell):
-    COLOR = (0, 64, 255)
+    def initializeTags(self):
+        for plane in self.initialPlanes:
+            self._environment.addTag(plane)
 
-    def __init__(self, environment):
-        super().__init__(environment, True, True, False)
+    def spawnNeighbors(self, activePlanes):
+        pass
 
-class DeadYZ(DeadCell):
-    COLOR = (0, 64, 255)
-
-    def __init__(self, environment):
-        super().__init__(environment, False, True, True)
-
-class DeadZX(DeadCell):
-    COLOR = (0, 64, 255)
-
-    def __init__(self, environment):
-        super().__init__(environment, True, False, True)
+    def updateState(self, activePlanes):
+        pass
 
 
-class AliveCell(CellBrain):
+class AliveCell(LifeCell):
     COLOR = (0, 255, 255)
-    def __init__(self, environment, xy, yz, zx):
-        super().__init__(environment)
 
-        self.xy = xy
-        self.yz = yz
-        self.zx = zx
+    def spawnNeighbors(self, activePlanes):
+        for plane in activePlanes:
+            for dx, dy, dz in PLANES[plane]:
+                self._environment.spawnCell(dx, dy, dz, DeadCell(self._environment, [plane]))
 
-        self.activeAxis = AxisPair.XY.value if xy else AxisPair.YZ.value if yz else AxisPair.ZX.value if zx else None
+    def updateState(self, activePlanes):
+        if self.neighborCount < 2 or self.neighborCount > 3:
+            self._environment.deleteCurrentSpawnNewCell(DeadCell(self._environment, activePlanes))
 
-        self.neighborCount = 2
+class DeadCell(LifeCell):
+    COLOR = (0, 64, 255)
 
-    def run(self):
-        currentStep = self._environment.getCurrentStepNumber() % 3
+    def updateState(self, activePlanes):
+        if self.neighborCount == 3:
+            self._environment.deleteCurrentSpawnNewCell(AliveCell(self._environment, activePlanes))
+        elif self.neighborCount == 0:
+            self._environment.deleteCurrentCell()
 
-        if currentStep == 0:
-            pairsToSpawn = []
-            spawnedCoordinates = []
-            if self.activeAxis:
-                pairsToSpawn.append(self.activeAxis)
 
-            self.neighborCount = 0
-            for checkedPair in pairsToSpawn:
-                for x in checkedPair[0]:
-                    for y in checkedPair[1]:
-                        for z in checkedPair[2]:
-                            if x == 0 and y == 0 and z == 0:
-                                continue
-                            coordinate = (x, y, z)
-                            if coordinate in spawnedCoordinates:
-                                continue
-                            spawnedCoordinates.append(coordinate)
-                            
-                            self._environment.spawnCell(x, y, z, DeadCell(self._environment, self.xy, self.yz, self.zx))
-                            
-        elif currentStep == 1:
-            pairsToCheck = []
-            checkedCoordinates = []
-            if self.activeAxis:
-                pairsToCheck.append(self.activeAxis)
+class AliveAnchor(AliveCell):
+    def initializeTags(self):
+        super().initializeTags()
+        self._environment.addTag("anchor")
 
-            self.neighborCount = 0
-            for checkedPair in pairsToCheck:
-                for x in checkedPair[0]:
-                    for y in checkedPair[1]:
-                        for z in checkedPair[2]:
-                            if x == 0 and y == 0 and z == 0:
-                                continue
+    def updateState(self, activePlanes):
+        if self.neighborCount < 2 or self.neighborCount > 3:
+            self._environment.deleteCurrentSpawnNewCell(DeadAnchor(self._environment, activePlanes))
 
-                            coordinate = (x, y, z)
-                            if coordinate in checkedCoordinates:
-                                continue
-                            checkedCoordinates.append(coordinate)
-                            
-                            if self._environment.isCellType(x, y, z, AliveCell):
-                                self.neighborCount += 1
-        else:
-            if self.neighborCount < 2 or self.neighborCount > 3:
-                self._environment.deleteCurrentSpawnNewCell(DeadCell(self._environment, self.xy, self.yz, self.zx))
+class DeadAnchor(DeadCell):
+    def initializeTags(self):
+        super().initializeTags()
+        self._environment.addTag("anchor")
+
+    def updateState(self, activePlanes):
+        if self.neighborCount == 3:
+            self._environment.deleteCurrentSpawnNewCell(AliveAnchor(self._environment, activePlanes))
 
 class AliveXY(AliveCell):
-    COLOR = (0, 255, 255)
-
-    def __init__(self, environment):
-        super().__init__(environment, True, True, False)
+    def __init__(self, environment): super().__init__(environment, ["xy"])
 
 class AliveYZ(AliveCell):
-    COLOR = (0, 255, 255)
-
-    def __init__(self, environment):
-        super().__init__(environment, False, True, True)
+    def __init__(self, environment): super().__init__(environment, ["yz"])
 
 class AliveZX(AliveCell):
-    COLOR = (0, 255, 255)
+    def __init__(self, environment): super().__init__(environment, ["zx"])
 
-    def __init__(self, environment):
-        super().__init__(environment, True, False, True)
+class DeadXY(DeadCell):
+    def __init__(self, environment): super().__init__(environment, ["xy"])
+
+class DeadYZ(DeadCell):
+    def __init__(self, environment): super().__init__(environment, ["yz"])
+
+class DeadZX(DeadCell):
+    def __init__(self, environment): super().__init__(environment, ["zx"])
+
+class AnchorXY(AliveAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy"])
+
+class AnchorYZ(AliveAnchor):
+    def __init__(self, environment): super().__init__(environment, ["yz"])
+
+class AnchorZX(AliveAnchor):
+    def __init__(self, environment): super().__init__(environment, ["zx"])
+
+class AnchorUniversal(AliveAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy", "yz", "zx"])
+
+class DeadAnchorXY(DeadAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy"])
+
+class DeadAnchorYZ(DeadAnchor):
+    def __init__(self, environment): super().__init__(environment, ["yz"])
+
+class DeadAnchorZX(DeadAnchor):
+    def __init__(self, environment): super().__init__(environment, ["zx"])
+
+class DeadAnchorUniversal(DeadAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy", "yz", "zx"])

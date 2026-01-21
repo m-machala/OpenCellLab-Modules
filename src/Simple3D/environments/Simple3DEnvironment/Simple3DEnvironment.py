@@ -65,7 +65,7 @@ class Simple3DEnvironment(Environment):
 
         self._spawnCell(xPosition, yPosition, zPosition, newCellBrain)
 
-    def checkAreaForCells(self, x1, x2, y1, y2, z1, z2): #coordinates relative to the currently active cells. inclusive from both sides
+    def _checkArea(self, x1, x2, y1, y2, z1, z2):
         currentCellData = self._cellExecutor.currentCell.cellData
         xPosition = currentCellData["xPosition"]
         yPosition = currentCellData["yPosition"]
@@ -78,7 +78,7 @@ class Simple3DEnvironment(Environment):
         z1 += zPosition
         z2 += zPosition
 
-        foundTypes = []
+        foundCells = []
 
         for cell in self._cellExecutor.cellList:
             cellData = cell.cellData
@@ -88,9 +88,43 @@ class Simple3DEnvironment(Environment):
             if min(x1, x2) <= cellData["xPosition"] <= max(x1, x2) and \
                min(y1, y2) <= cellData["yPosition"] <= max(y1, y2) and \
                min(z1, z2) <= cellData["zPosition"] <= max(z1, z2):
-                foundTypes.append(type(cell.cellBrain))
+                foundCells.append(cell)
         
+        return foundCells
+
+    def checkAreaForCells(self, x1, x2, y1, y2, z1, z2): #coordinates relative to the currently active cells. inclusive from both sides
+        foundCells = self._checkArea(x1, x2, y1, y2, z1, z2)
+        foundTypes = []
+        for cell in foundCells:
+            foundType = type(cell.cellBrain)
+            if foundType not in foundTypes:
+                foundTypes.append(foundType)
         return foundTypes
+    
+    def checkAreaForTags(self, x1, x2, y1, y2, z1, z2): #coordinates relative to the currently active cells. inclusive from both sides
+        foundCells = self._checkArea(x1, x2, y1, y2, z1, z2)
+        foundTags = []
+
+        for cell in foundCells:
+            tags = cell.cellData["tags"]
+            for tag in tags:
+                if tag not in foundTags:
+                    foundTags.append(tag)
+        return foundTags
+    
+    def addTag(self, tag):
+        currentCellData = self._cellExecutor.currentCell.cellData
+        if tag not in currentCellData["tags"]:
+            currentCellData["tags"].append(tag)
+
+    def removeTag(self, tag):
+        currentCellData = self._cellExecutor.currentCell.cellData
+        if tag in currentCellData["tags"]:
+            currentCellData["tags"].remove(tag)
+
+    def testForTag(self, tag):
+        currentCellData = self._cellExecutor.currentCell.cellData
+        return tag in currentCellData["tags"]
 
 
     def _spawnCell(self, xCoordinate, yCoordinate, zCoordinate, newCellBrain):
@@ -101,6 +135,7 @@ class Simple3DEnvironment(Environment):
         newCell.cellData["xPosition"] = xCoordinate
         newCell.cellData["yPosition"] = yCoordinate
         newCell.cellData["zPosition"] = zCoordinate
+        newCell.cellData["tags"] = []
 
         if hasattr(type(newCellBrain), "COLOR"):
             newCell.cellData["color"] = type(newCellBrain).COLOR
