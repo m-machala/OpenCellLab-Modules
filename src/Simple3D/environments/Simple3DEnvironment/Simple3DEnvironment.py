@@ -2,6 +2,7 @@ from base_classes.Environment import Environment
 from base_classes.Cell import Cell
 from ExportFunctions import ExportFunction, ControlElement
 import random
+from collections import defaultdict
 
 class Simple3DEnvironment(Environment):
     def __init__(self, renderer):
@@ -9,12 +10,27 @@ class Simple3DEnvironment(Environment):
 
         self._cellMap = {}
         self._stepCount = 0
+        
+        # Spatial Indices for O(1) coordinate lookups
+        self._xIndex = defaultdict(set)
+        self._yIndex = defaultdict(set)
+        self._zIndex = defaultdict(set)
 
     def _updateCellMap(self, x, y, z, cell = None):
         if cell == None:
             self._cellMap.pop((x, y, z), None)
         else:
             self._cellMap[(x, y, z)] = cell
+
+    def _addToIndices(self, x, y, z, cell):
+        self._xIndex[x].add(cell)
+        self._yIndex[y].add(cell)
+        self._zIndex[z].add(cell)
+
+    def _removeFromIndices(self, x, y, z, cell):
+        if cell in self._xIndex[x]: self._xIndex[x].discard(cell)
+        if cell in self._yIndex[y]: self._yIndex[y].discard(cell)
+        if cell in self._zIndex[z]: self._zIndex[z].discard(cell)
 
     def getCurrentStepNumber(self):
         return self._stepCount
@@ -54,6 +70,7 @@ class Simple3DEnvironment(Environment):
 
         self._updateCellMap(currentCellX, currentCellY, currentCellZ)
         self._cellExecutor.removeCell(currentCell)
+        self._removeFromIndices(currentCellX, currentCellY, currentCellZ, currentCell)
 
     def deleteCurrentSpawnNewCell(self, newCellBrain):
         currentCell = self._cellExecutor.currentCell
@@ -78,9 +95,33 @@ class Simple3DEnvironment(Environment):
         z1 += zPosition
         z2 += zPosition
 
+        candidates = None
+
+        if x1 == x2:
+            candidates = self._xIndex[x1]
+        
+        if y1 == y2:
+            yCandidates = self._yIndex[y1]
+            if candidates is None:
+                candidates = yCandidates
+            else:
+                candidates = candidates.intersection(yCandidates)
+                if not candidates: return []
+
+        if z1 == z2:
+            zCandidates = self._zIndex[z1]
+            if candidates is None:
+                candidates = zCandidates
+            else:
+                candidates = candidates.intersection(zCandidates)
+                if not candidates: return []
+
+        if candidates is None:
+            candidates = self._cellExecutor.cellList
+
         foundCells = []
 
-        for cell in self._cellExecutor.cellList:
+        for cell in candidates:
             cellData = cell.cellData
             if cellData == currentCellData:
                 continue
@@ -92,7 +133,7 @@ class Simple3DEnvironment(Environment):
         
         return foundCells
 
-    def checkAreaForCells(self, x1, x2, y1, y2, z1, z2): #coordinates relative to the currently active cells. inclusive from both sides
+    def checkAreaForCells(self, x1, x2, y1, y2, z1, z2):
         foundCells = self._checkArea(x1, x2, y1, y2, z1, z2)
         foundTypes = []
         for cell in foundCells:
@@ -101,7 +142,7 @@ class Simple3DEnvironment(Environment):
                 foundTypes.append(foundType)
         return foundTypes
     
-    def checkAreaForTags(self, x1, x2, y1, y2, z1, z2): #coordinates relative to the currently active cells. inclusive from both sides
+    def checkAreaForTags(self, x1, x2, y1, y2, z1, z2):
         foundCells = self._checkArea(x1, x2, y1, y2, z1, z2)
         foundTags = []
 
@@ -145,6 +186,7 @@ class Simple3DEnvironment(Environment):
         self._cellExecutor.addCell(newCell)
 
         self._updateCellMap(xCoordinate, yCoordinate, zCoordinate, newCell)
+        self._addToIndices(xCoordinate, yCoordinate, zCoordinate, newCell)
 
     def _addUserCell(self, position):
         xCoordinate = position[0]
@@ -168,10 +210,14 @@ class Simple3DEnvironment(Environment):
             cell = self._cellMap[(xCoordinate, yCoordinate, zCoordinate)]
             self._cellExecutor.removeCell(cell)
             self._updateCellMap(xCoordinate, yCoordinate, zCoordinate)
+            self._removeFromIndices(xCoordinate, yCoordinate, zCoordinate, cell)
         return
 
     def _executorClearedCells(self):
         self._cellMap = {}
+        self._xIndex.clear()
+        self._yIndex.clear()
+        self._zIndex.clear()
 
     def _cellsCycled(self):
         self._stepCount += 1

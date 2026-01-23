@@ -73,7 +73,6 @@ class LifeCell(CellBrain):
     def updateState(self, activePlanes):
         pass
 
-
 class AliveCell(LifeCell):
     COLOR = (0, 255, 255)
 
@@ -83,18 +82,24 @@ class AliveCell(LifeCell):
                 self._environment.spawnCell(dx, dy, dz, DeadCell(self._environment, [plane]))
 
     def updateState(self, activePlanes):
-        if self.neighborCount < 2 or self.neighborCount > 3:
+        #planeCount = len(activePlanes) 
+        #overpopulationLimit = 3 + (planeCount - 1) * 2
+        overpopulationLimit = 3
+
+        if self.neighborCount < 2 or self.neighborCount > overpopulationLimit:
             self._environment.deleteCurrentSpawnNewCell(DeadCell(self._environment, activePlanes))
 
 class DeadCell(LifeCell):
     COLOR = (0, 64, 255)
 
     def updateState(self, activePlanes):
-        if self.neighborCount == 3:
+        #planeCount = len(activePlanes)
+        #lifeLimit = 3 + (planeCount - 1)
+        lifeLimit = 3
+        if self.neighborCount >= 3 and self.neighborCount <= lifeLimit:
             self._environment.deleteCurrentSpawnNewCell(AliveCell(self._environment, activePlanes))
         elif self.neighborCount == 0:
             self._environment.deleteCurrentCell()
-
 
 class AliveAnchor(AliveCell):
     def initializeTags(self):
@@ -102,7 +107,10 @@ class AliveAnchor(AliveCell):
         self._environment.addTag("anchor")
 
     def updateState(self, activePlanes):
-        if self.neighborCount < 2 or self.neighborCount > 3:
+        planeCount = len(activePlanes)
+        overpopulationLimit = 3 + (planeCount - 1) * 2
+
+        if self.neighborCount < 2 or self.neighborCount > overpopulationLimit:
             self._environment.deleteCurrentSpawnNewCell(DeadAnchor(self._environment, activePlanes))
 
 class DeadAnchor(DeadCell):
@@ -132,26 +140,26 @@ class DeadYZ(DeadCell):
 class DeadZX(DeadCell):
     def __init__(self, environment): super().__init__(environment, ["zx"])
 
-class AnchorXY(AliveAnchor):
-    def __init__(self, environment): super().__init__(environment, ["xy"])
-
-class AnchorYZ(AliveAnchor):
-    def __init__(self, environment): super().__init__(environment, ["yz"])
-
-class AnchorZX(AliveAnchor):
-    def __init__(self, environment): super().__init__(environment, ["zx"])
-
 class AnchorUniversal(AliveAnchor):
     def __init__(self, environment): super().__init__(environment, ["xy", "yz", "zx"])
 
-class DeadAnchorXY(DeadAnchor):
-    def __init__(self, environment): super().__init__(environment, ["xy"])
+class AnchorXYYZ(AliveAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy", "yz"])
 
-class DeadAnchorYZ(DeadAnchor):
-    def __init__(self, environment): super().__init__(environment, ["yz"])
+class AnchorXYZX(AliveAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy", "zx"])
 
-class DeadAnchorZX(DeadAnchor):
-    def __init__(self, environment): super().__init__(environment, ["zx"])
+class AnchorYZZX(AliveAnchor):
+    def __init__(self, environment): super().__init__(environment, ["yz", "zx"])
 
 class DeadAnchorUniversal(DeadAnchor):
     def __init__(self, environment): super().__init__(environment, ["xy", "yz", "zx"])
+
+class DeadAnchorXYYZ(DeadAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy", "yz"])
+
+class DeadAnchorXYZX(DeadAnchor):
+    def __init__(self, environment): super().__init__(environment, ["xy", "zx"])
+
+class DeadAnchorYZZX(DeadAnchor):
+    def __init__(self, environment): super().__init__(environment, ["yz", "zx"])

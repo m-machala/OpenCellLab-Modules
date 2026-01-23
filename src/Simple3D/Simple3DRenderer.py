@@ -55,35 +55,107 @@ class Simple3DRenderer(Renderer):
     def render(self, cell3DList):
         pitch, yaw, roll = self._cameraRotation
         self._transformationMatrix = self._getRotationMatrix(pitch, yaw, roll)
+        
         outputBaseWidth = self.outputResolutionW
         outputBaseHeight = self.outputResolutionH
+        screenCenterX = outputBaseWidth / 2
+        screenCenterY = outputBaseHeight / 2
 
         self._currentFrame = time.perf_counter()
         self._processMovement()
         self._lastFrame = self._currentFrame
 
-        outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color = self._backgroundColor)
+        fov_rad = np.radians(self._FOV)
+        if fov_rad <= 0 or fov_rad >= np.pi:
+            focal_mult = 1.0
+        else:
+            tan_half_fov = np.tan(fov_rad / 2)
+            focal_mult = outputBaseWidth / (2 * tan_half_fov)
+
+        if not cell3DList:
+            outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
+            buffer = BytesIO()
+            outputImage.save(buffer, format="PNG")
+            return buffer.getvalue()
+
+        count = len(cell3DList)
+        raw_positions = np.zeros((count, 3))
+        colors = np.empty(count, dtype=object)
+
+        for i, cell in enumerate(cell3DList):
+            data = cell.cellData
+            raw_positions[i] = (data["xPosition"], data["yPosition"], data["zPosition"])
+            colors[i] = data["color"]
+
+        diff = np.abs(raw_positions - self._cameraPosition)
+        mask = np.all(diff <= self._renderDistance, axis=1)
+        
+        positions = raw_positions[mask]
+        colors = colors[mask]
+        
+        if len(positions) == 0:
+            outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
+            buffer = BytesIO()
+            outputImage.save(buffer, format="PNG")
+            return buffer.getvalue()
+
+        world_verts = positions[:, np.newaxis, :] + cubeVertices[np.newaxis, :, :]
+        cam_verts = world_verts - self._cameraPosition
+        trans_verts = cam_verts @ self._transformationMatrix
+        
+        X = trans_verts[..., 0]
+        Y = trans_verts[..., 1]
+        Z = trans_verts[..., 2]
+
+        Z_safe = np.where(Z <= 0, 0.0001, Z) 
+        scale = focal_mult / Z_safe
+        screen_X = screenCenterX + X * scale
+        screen_Y = screenCenterY + Y * scale
+
+        quad_indices = np.array(cubeQuads)
+        Q_X = screen_X[:, quad_indices]
+        Q_Y = screen_Y[:, quad_indices]
+        Q_Z = Z[:, quad_indices]
+
+        min_z = np.min(Q_Z, axis=2)
+        visible_mask = min_z > 0
+
+        V_dist_sq = X**2 + Y**2 + Z**2
+        Q_dist_sq = V_dist_sq[:, quad_indices]
+        avg_dist_sq = np.mean(Q_dist_sq, axis=2)
+
+        avg_dist_sq[~visible_mask] = np.inf
+        sorted_face_indices = np.argsort(avg_dist_sq, axis=1)
+        top_3_indices = sorted_face_indices[:, :3]
+
+        row_indices = np.arange(len(positions))[:, np.newaxis]
+        chosen_dists = avg_dist_sq[row_indices, top_3_indices]
+        valid_final_mask = chosen_dists != np.inf
+        flat_valid = valid_final_mask.flatten()
+
+        if not np.any(flat_valid):
+            outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
+            buffer = BytesIO()
+            outputImage.save(buffer, format="PNG")
+            return buffer.getvalue()
+
+        flat_X = Q_X[row_indices, top_3_indices].reshape(-1, 4)[flat_valid]
+        flat_Y = Q_Y[row_indices, top_3_indices].reshape(-1, 4)[flat_valid]
+        flat_dists = chosen_dists.flatten()[flat_valid]
+        flat_colors = np.repeat(colors, 3, axis=0)[flat_valid]
+
+        sort_order = np.argsort(flat_dists)[::-1]
+        final_X = flat_X[sort_order]
+        final_Y = flat_Y[sort_order]
+        final_colors = flat_colors[sort_order]
+
+        outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
         outputImageDraw = ImageDraw.Draw(outputImage)
 
-        polygons = []
-        for cell in cell3DList:
-            data = cell.cellData
-            xPosition = data["xPosition"]
-            yPosition = data["yPosition"]
-            zPosition = data["zPosition"]
-
-            if abs(self._cameraPosition[0] - xPosition) > self._renderDistance or abs(self._cameraPosition[1] - yPosition) > self._renderDistance or abs(self._cameraPosition[2] - zPosition) > self._renderDistance:
-                continue
-
-            cellPolygons = self._getCubePolygons((data["xPosition"], data["yPosition"], data["zPosition"]), data["color"])
-            polygons += cellPolygons
-
-        polygons.sort(reverse=True, key=itemgetter(0))
+        for i in range(len(final_X)):
+            poly = list(zip(final_X[i], final_Y[i]))
+            outputImageDraw.polygon(poly, fill=final_colors[i], outline=(0, 0, 0))
         
-        for polygon in polygons:
-            outputImageDraw.polygon(polygon[1], polygon[2], (0, 0, 0))
-        
-        # Convert PIL image to PNG bytes
         buffer = BytesIO()
         outputImage.save(buffer, format="PNG")
         return buffer.getvalue()

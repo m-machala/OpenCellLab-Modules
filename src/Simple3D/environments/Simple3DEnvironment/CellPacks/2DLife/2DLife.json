@@ -37,44 +37,44 @@
             "cell description": "Dead cell active on the ZX plane."
         },
         {
-            "cell class": "AnchorXY",
-            "cell name": "Anchor - XY Plane",
-            "cell description": "Active structural anchor. Connects intersecting planes to the XY plane via tags."
-        },
-        {
-            "cell class": "AnchorYZ",
-            "cell name": "Anchor - YZ Plane",
-            "cell description": "Active structural anchor. Connects intersecting planes to the YZ plane via tags."
-        },
-        {
-            "cell class": "AnchorZX",
-            "cell name": "Anchor - ZX Plane",
-            "cell description": "Active structural anchor. Connects intersecting planes to the ZX plane via tags."
-        },
-        {
             "cell class": "AnchorUniversal",
             "cell name": "Universal Anchor",
             "cell description": "Active structural anchor active on all three planes (XY, YZ, ZX)."
         },
         {
-            "cell class": "DeadAnchorXY",
-            "cell name": "Dead Anchor - XY Plane",
-            "cell description": "Dormant structural anchor waiting for neighbors on the XY plane."
+            "cell class": "AnchorXYYZ",
+            "cell name": "Anchor - XY & YZ",
+            "cell description": "Active structural anchor connecting the XY and YZ planes (bridges via Y-axis)."
         },
         {
-            "cell class": "DeadAnchorYZ",
-            "cell name": "Dead Anchor - YZ Plane",
-            "cell description": "Dormant structural anchor waiting for neighbors on the YZ plane."
+            "cell class": "AnchorXYZX",
+            "cell name": "Anchor - XY & ZX",
+            "cell description": "Active structural anchor connecting the XY and ZX planes (bridges via X-axis)."
         },
         {
-            "cell class": "DeadAnchorZX",
-            "cell name": "Dead Anchor - ZX Plane",
-            "cell description": "Dormant structural anchor waiting for neighbors on the ZX plane."
+            "cell class": "AnchorYZZX",
+            "cell name": "Anchor - YZ & ZX",
+            "cell description": "Active structural anchor connecting the YZ and ZX planes (bridges via Z-axis)."
         },
         {
             "cell class": "DeadAnchorUniversal",
             "cell name": "Dead Universal Anchor",
             "cell description": "Dormant universal anchor waiting for neighbors on all three planes."
+        },
+        {
+            "cell class": "DeadAnchorXYYZ",
+            "cell name": "Dead Anchor - XY & YZ",
+            "cell description": "Dormant anchor bridging XY and YZ planes."
+        },
+        {
+            "cell class": "DeadAnchorXYZX",
+            "cell name": "Dead Anchor - XY & ZX",
+            "cell description": "Dormant anchor bridging XY and ZX planes."
+        },
+        {
+            "cell class": "DeadAnchorYZZX",
+            "cell name": "Dead Anchor - YZ & ZX",
+            "cell description": "Dormant anchor bridging YZ and ZX planes."
         }
     ]
-}
+}   
