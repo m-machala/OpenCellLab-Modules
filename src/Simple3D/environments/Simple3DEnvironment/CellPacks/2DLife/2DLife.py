@@ -19,21 +19,45 @@ class LifeCell(CellBrain):
         for plane in PLANES.keys():
             if self._environment.testForTag(plane):
                 activePlanes.add(plane)
+        
+        inherentPlanes = activePlanes.copy()
 
-        x_tags = self._environment.checkAreaForTags(float("-inf"), float("inf"), 0, 0, 0, 0)
-        if "anchor" in x_tags:
-            if "xy" in x_tags: activePlanes.add("xy")
-            if "zx" in x_tags: activePlanes.add("zx")
+        scanX = "xy" in activePlanes or "zx" in activePlanes
+        scanY = "xy" in activePlanes or "yz" in activePlanes
+        scanZ = "yz" in activePlanes or "zx" in activePlanes
+        
+        if scanX:
+            tagsList = self._environment.getTagsOfCellsInArea(float("-inf"), float("inf"), 0, 0, 0, 0)
+            for tags in tagsList:
+                if "anchor" in tags:
+                    tagSet = set(tags)
+                    if tagSet.isdisjoint(inherentPlanes):
+                        continue
 
-        y_tags = self._environment.checkAreaForTags(0, 0, float("-inf"), float("inf"), 0, 0)
-        if "anchor" in y_tags:
-            if "xy" in y_tags: activePlanes.add("xy")
-            if "yz" in y_tags: activePlanes.add("yz")
+                    if "xy" in tags: activePlanes.add("xy")
+                    if "zx" in tags: activePlanes.add("zx")
 
-        z_tags = self._environment.checkAreaForTags(0, 0, 0, 0, float("-inf"), float("inf"))
-        if "anchor" in z_tags:
-            if "yz" in z_tags: activePlanes.add("yz")
-            if "zx" in z_tags: activePlanes.add("zx")
+        if scanY:
+            tagsList = self._environment.getTagsOfCellsInArea(0, 0, float("-inf"), float("inf"), 0, 0)
+            for tags in tagsList:
+                if "anchor" in tags:
+                    tagSet = set(tags)
+                    if tagSet.isdisjoint(inherentPlanes):
+                        continue
+
+                    if "xy" in tags: activePlanes.add("xy")
+                    if "yz" in tags: activePlanes.add("yz")
+
+        if scanZ:
+            tagsList = self._environment.getTagsOfCellsInArea(0, 0, 0, 0, float("-inf"), float("inf"))
+            for tags in tagsList:
+                if "anchor" in tags:
+                    tagSet = set(tags)
+                    if tagSet.isdisjoint(inherentPlanes):
+                        continue
+
+                    if "yz" in tags: activePlanes.add("yz")
+                    if "zx" in tags: activePlanes.add("zx")
         
         return list(activePlanes)
 

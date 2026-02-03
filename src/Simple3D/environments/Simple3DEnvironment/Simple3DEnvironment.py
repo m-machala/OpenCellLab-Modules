@@ -153,6 +153,13 @@ class Simple3DEnvironment(Environment):
                     foundTags.append(tag)
         return foundTags
     
+    def getTagsOfCellsInArea(self, x1, x2, y1, y2, z1, z2):
+        foundCells = self._checkArea(x1, x2, y1, y2, z1, z2)
+        foundTagsList = []
+        for cell in foundCells:
+            foundTagsList.append(list(cell.cellData["tags"]))
+        return foundTagsList
+    
     def addTag(self, tag):
         currentCellData = self._cellExecutor.currentCell.cellData
         if tag not in currentCellData["tags"]:
