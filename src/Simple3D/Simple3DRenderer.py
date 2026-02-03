@@ -50,7 +50,7 @@ class Simple3DRenderer(Renderer):
                                  ExportFunction(self._changeRotationSpeed, "Rotation speed", ControlElement.SLIDER, [1, 50, int(self._cameraRotationSpeed * 100)]),
                                  ExportFunction(self._changeRenderDistance, "Render distance", ControlElement.SLIDER, [1, 250, int(self._renderDistance)])]
 
-        self._backgroundColor = (0, 0, 0)
+        self._backgroundColor = (0, 0, 0, 255)
 
     def render(self, cell3DList):
         pitch, yaw, roll = self._cameraRotation
@@ -73,7 +73,7 @@ class Simple3DRenderer(Renderer):
             focal_mult = outputBaseWidth / (2 * tan_half_fov)
 
         if not cell3DList:
-            outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
+            outputImage = Image.new("RGBA", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
             buffer = BytesIO()
             outputImage.save(buffer, format="PNG")
             return buffer.getvalue()
@@ -94,7 +94,7 @@ class Simple3DRenderer(Renderer):
         colors = colors[mask]
         
         if len(positions) == 0:
-            outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
+            outputImage = Image.new("RGBA", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
             buffer = BytesIO()
             outputImage.save(buffer, format="PNG")
             return buffer.getvalue()
@@ -134,7 +134,7 @@ class Simple3DRenderer(Renderer):
         flat_valid = valid_final_mask.flatten()
 
         if not np.any(flat_valid):
-            outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
+            outputImage = Image.new("RGBA", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
             buffer = BytesIO()
             outputImage.save(buffer, format="PNG")
             return buffer.getvalue()
@@ -149,12 +149,37 @@ class Simple3DRenderer(Renderer):
         final_Y = flat_Y[sort_order]
         final_colors = flat_colors[sort_order]
 
-        outputImage = Image.new("RGB", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
+        outputImage = Image.new("RGBA", (outputBaseWidth, outputBaseHeight), color=self._backgroundColor)
         outputImageDraw = ImageDraw.Draw(outputImage)
 
         for i in range(len(final_X)):
+            fill = final_colors[i]
             poly = list(zip(final_X[i], final_Y[i]))
-            outputImageDraw.polygon(poly, fill=final_colors[i], outline=(0, 0, 0))
+            if len(fill) == 3 or (len(fill) >= 4 and fill[3] == 255):
+                outputImageDraw.polygon(poly, fill=fill, outline=(0, 0, 0))
+            else:
+
+                rawMinX = int(min(final_X[i]))
+                rawMaxX = int(max(final_X[i]))
+                rawMinY = int(min(final_Y[i]))
+                rawMaxY = int(max(final_Y[i]))
+
+                minX = max(0, rawMinX)
+                minY = max(0, rawMinY)
+                maxX = min(outputBaseWidth, rawMaxX + 2)
+                maxY = min(outputBaseHeight, rawMaxY + 2)
+
+                width = maxX - minX
+                height = maxY - minY
+
+                if width > 0 and height > 0:
+                    overlay = Image.new("RGBA", (width, height))
+                    overlayDraw = ImageDraw.Draw(overlay)
+
+                    localPoly = [(p[0] - minX, p[1] - minY) for p in poly]
+                    overlayDraw.polygon(localPoly, fill=fill, outline=(0, 0, 0))
+
+                    outputImage.paste(overlay, (minX, minY), overlay)
         
         buffer = BytesIO()
         outputImage.save(buffer, format="PNG")

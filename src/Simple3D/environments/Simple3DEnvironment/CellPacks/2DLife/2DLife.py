@@ -114,7 +114,7 @@ class AliveCell(LifeCell):
             self._environment.deleteCurrentSpawnNewCell(DeadCell(self._environment, activePlanes))
 
 class DeadCell(LifeCell):
-    COLOR = (0, 64, 255)
+    COLOR = (0, 64, 255, 127)
 
     def updateState(self, activePlanes):
         #planeCount = len(activePlanes)
