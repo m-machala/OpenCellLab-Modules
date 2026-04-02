@@ -1,0 +1,44 @@
+{
+	"cells": [
+	{
+		"class": "AliveCell",
+		"data": {
+            "xPosition": 0,
+            "yPosition": 0,
+            "color": [0, 255, 255]
+        }
+	},
+    {
+		"class": "AliveCell",
+		"data": {
+            "xPosition": 0,
+            "yPosition": 1,
+            "color": [0, 255, 255]
+        }
+	},
+    {
+		"class": "AliveCell",
+		"data": {
+            "xPosition": 1,
+            "yPosition": 0,
+            "color": [0, 255, 255]
+        }
+	},
+    {
+		"class": "AliveCell",
+		"data": {
+            "xPosition": 2,
+            "yPosition": 0,
+            "color": [0, 255, 255]
+        }
+	},
+    {
+		"class": "AliveCell",
+		"data": {
+            "xPosition": 1,
+            "yPosition": 2,
+            "color": [0, 255, 255]
+        }
+	}
+	]
+}

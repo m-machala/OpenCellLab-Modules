@@ -1,0 +1,9 @@
+{
+    "package type": "loader",
+	"package name": "JSON Loader",
+	"author name": "m_machala",
+	"package description": "Loads a set of cells defined by a JSON file.",
+    "environment class": "any",
+	"package path": "JsonLoader.py",
+	"package class": "JsonLoader"
+}

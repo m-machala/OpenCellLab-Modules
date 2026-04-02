@@ -52,7 +52,7 @@ class Simple2DRenderer(Renderer):
                 if topLeftX > bottomRightX or topLeftY > bottomRightY:
                     continue
 
-                outputImageDraw.rectangle([(topLeftX, topLeftY), (bottomRightX, bottomRightY)], fill = cell.cellData["color"])
+                outputImageDraw.rectangle([(topLeftX, topLeftY), (bottomRightX, bottomRightY)], fill = tuple(cell.cellData["color"]))
 
         # Convert PIL image to PNG bytes
         buffer = BytesIO()

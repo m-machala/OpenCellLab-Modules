@@ -13,6 +13,12 @@ class Simple2DEnvironment(Environment):
             self._cellMap.pop((x, y), None)
         else:
             self._cellMap[(x, y)] = cell
+
+    def _rebuildCellMap(self):
+        self._cellMap = {}
+
+        for cell in self._cellExecutor.cellList:
+            self._updateCellMap(cell.cellData["xPosition"], cell.cellData["yPosition"], cell)
         
     def _cellsCycled(self):
         self._stepCount += 1
@@ -25,6 +31,9 @@ class Simple2DEnvironment(Environment):
 
     def _executorClearedCells(self):
         self._cellMap = {}
+
+    def _cellsChangedManually(self):
+        self._rebuildCellMap()
 
     def _addUserCell(self, data):
         xCoordinate = data[0]

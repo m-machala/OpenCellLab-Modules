@@ -1,0 +1,10 @@
+{
+    "package type": "loader data",
+	"package name": "JsonLoader data",
+	"author name": "m_machala",
+	"package description": "testing data",
+    "package path": "JsonLoader data.json",
+    "environment class": "Simple2DEnvironment",
+    "loader class": "JsonLoader",
+    "cell classes": ["AliveCell"]
+}
