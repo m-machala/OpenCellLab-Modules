@@ -1,9 +1,9 @@
 {
     "package type": "loader data",
-	"package name": "JsonLoader data",
+	"package name": "Glider",
 	"author name": "m_machala",
 	"package description": "testing data",
-    "package path": "JsonLoader data.json",
+    "package path": "2D Glider.json",
     "environment class": "Simple2DEnvironment",
     "loader class": "JsonLoader",
     "cell classes": ["AliveCell"]
